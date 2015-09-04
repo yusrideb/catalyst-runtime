@@ -244,6 +244,8 @@ has captures_constraints => (
 sub resolve_type_constraint {
   my ($self, $name) = @_;
 
+    warn "About to resolve TC $name" if $ENV{CATALYST_CONSTRAINTS_DEBUG};
+
   if(defined($name) && blessed($name) && $name->can('check')) {
     # Its already a TC, good to go.
     return $name;
@@ -252,7 +254,7 @@ sub resolve_type_constraint {
   if($name=~m/::/) {
     eval "use Type::Registry; 1" || die "Can't resolve type constraint $name without installing Type::Tiny";
     my $tc =  Type::Registry->new->foreign_lookup($name);
-    return defined $tc ? $tc : die "'$name' not a type constraint in ${\$self->private_path}";
+    return defined $tc ? $tc : die "'$name' not a full namespace type constraint in ${\$self->private_path}";
   }
 
   my @tc = eval "package ${\$self->class}; $name" or do {
