@@ -244,7 +244,7 @@ has captures_constraints => (
 sub resolve_type_constraint {
   my ($self, $name) = @_;
 
-    warn "About to resolve TC $name" if $ENV{CATALYST_CONSTRAINTS_DEBUG};
+    warn "About to resolve TC $name\n" if $ENV{CATALYST_CONSTRAINTS_DEBUG};
 
   if(defined($name) && blessed($name) && $name->can('check')) {
     # Its already a TC, good to go.
@@ -261,7 +261,9 @@ sub resolve_type_constraint {
     # ok... so its not defined in the package.  we need to look at all the roles
     # and superclasses, look for attributes and figure it out.
     # Superclasses take precedence;
-    #
+
+    warn "About inspect object heirarchy\n" if $ENV{CATALYST_CONSTRAINTS_DEBUG};
+
     my @supers = $self->class->can('meta') ? map { $_->meta } $self->class->meta->superclasses : ();
     my @roles = $self->class->can('meta') ? $self->class->meta->calculate_all_roles : ();
 
@@ -293,6 +295,9 @@ sub resolve_type_constraint {
     my $classes = join(',', $self->class, @roles, @supers);
     die "'$name' not a type constraint in '${\$self->private_path}', Looked in: $classes";
   };
+
+  use Data::Dumper;
+  warn Dumper ["found TC", map { ref $_ ? $_->name : $_ } @tc] if $ENV{CATALYST_CONSTRAINTS_DEBUG};
 
   if($tc[0]) {
     return map { ref($_) ? $_ : Moose::Util::TypeConstraints::find_or_parse_type_constraint($_) } @tc;
