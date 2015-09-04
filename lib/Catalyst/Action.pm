@@ -299,7 +299,7 @@ sub resolve_type_constraint {
   use Data::Dumper;
   warn Dumper ["found TC", map { ref $_ ? $_->name : $_ } @tc] if $ENV{CATALYST_CONSTRAINTS_DEBUG};
 
-  if($tc[0]) {
+  if(scalar(@tc)) {
     return map { ref($_) ? $_ : Moose::Util::TypeConstraints::find_or_parse_type_constraint($_) } @tc;
   } else {
     return;
