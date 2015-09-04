@@ -258,12 +258,17 @@ sub resolve_type_constraint {
   }
 
   my @tc = eval("package ${\$self->class}; $name");
+
+  use Data::Dumper;
+  warn Dumper ["found TC", map { ref $_ ? $_->name : $_ } @tc];
+  warn "scalar tc is ".scalar(@tc)."\n";
+
   unless(scalar @tc) {
     # ok... so its not defined in the package.  we need to look at all the roles
     # and superclasses, look for attributes and figure it out.
     # Superclasses take precedence;
 
-    warn "About inspect object heirarchy\n" if $ENV{CATALYST_CONSTRAINTS_DEBUG};
+    warn "About inspect object heirarchy\n";
 
     my @supers = $self->class->can('meta') ? map { $_->meta } $self->class->meta->superclasses : ();
     my @roles = $self->class->can('meta') ? $self->class->meta->calculate_all_roles : ();
@@ -272,19 +277,19 @@ sub resolve_type_constraint {
     # first type constraint found. We should probably find all matching
     # type constraints and try to do some sort of resolution.
     
-    warn "--> Hunting for TC $name in controller hierarchy\n" if $ENV{CATALYST_CONSTRAINTS_DEBUG};
+    warn "--> Hunting for TC $name in controller hierarchy\n";
 
     foreach my $parent (@roles, @supers) {
-      warn "    Looking for TC $name in ${\$parent->name}\n" if $ENV{CATALYST_CONSTRAINTS_DEBUG};
+      warn "    Looking for TC $name in ${\$parent->name}\n";
       if(my $m = $parent->get_method($self->name)) {
         if($m->can('attributes')) {
-          warn "      method $m has attributes\n" if $ENV{CATALYST_CONSTRAINTS_DEBUG};
+          warn "      method $m has attributes\n";
           my ($key, $value) = map { $_ =~ /^(.*?)(?:\(\s*(.+?)\s*\))?$/ }
             grep { $_=~/^Args\(/ or $_=~/^CaptureArgs\(/ }
               @{$m->attributes};
-          warn "      about to evaluate any found attrs\n"  if $ENV{CATALYST_CONSTRAINTS_DEBUG};
+          warn "      about to evaluate any found attrs\n";
           next unless $value eq $name;
-          warn "      found attr info $key and $value\n" if $ENV{CATALYST_CONSTRAINTS_DEBUG};
+          warn "      found attr info $key and $value\n";
           my @tc = eval "package ${\$parent->name}; $name";
           if(scalar(@tc)) {
             return map { ref($_) ? $_ : Moose::Util::TypeConstraints::find_or_parse_type_constraint($_) } @tc;
@@ -292,7 +297,7 @@ sub resolve_type_constraint {
             return;
           }
         } else {
-          warn "    method $m does not have method attributes\n" if $ENV{CATALYST_CONSTRAINTS_DEBUG};
+          warn "    method $m does not have method attributes\n";
         }
       }
     }
@@ -300,9 +305,6 @@ sub resolve_type_constraint {
     my $classes = join(',', $self->class, @roles, @supers);
     die "'$name' not a type constraint in '${\$self->private_path}', Looked in: $classes";
   }
-
-  use Data::Dumper;
-  warn Dumper ["found TC", map { ref $_ ? $_->name : $_ } @tc] if $ENV{CATALYST_CONSTRAINTS_DEBUG};
 
   if(scalar(@tc)) {
     return map { ref($_) ? $_ : Moose::Util::TypeConstraints::find_or_parse_type_constraint($_) } @tc;
