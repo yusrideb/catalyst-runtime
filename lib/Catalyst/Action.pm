@@ -257,7 +257,8 @@ sub resolve_type_constraint {
     return defined $tc ? $tc : die "'$name' not a full namespace type constraint in ${\$self->private_path}";
   }
 
-  my @tc = eval("package ${\$self->class}; $name") or do {
+  my @tc = eval("package ${\$self->class}; $name");
+  unless(scalar @tc) {
     # ok... so its not defined in the package.  we need to look at all the roles
     # and superclasses, look for attributes and figure it out.
     # Superclasses take precedence;
@@ -298,7 +299,7 @@ sub resolve_type_constraint {
     
     my $classes = join(',', $self->class, @roles, @supers);
     die "'$name' not a type constraint in '${\$self->private_path}', Looked in: $classes";
-  };
+  }
 
   use Data::Dumper;
   warn Dumper ["found TC", map { ref $_ ? $_->name : $_ } @tc] if $ENV{CATALYST_CONSTRAINTS_DEBUG};
