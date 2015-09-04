@@ -257,7 +257,7 @@ sub resolve_type_constraint {
     return defined $tc ? $tc : die "'$name' not a full namespace type constraint in ${\$self->private_path}";
   }
 
-  my @tc = eval "package ${\$self->class}; $name" or do {
+  my @tc = eval("package ${\$self->class}; $name") or do {
     # ok... so its not defined in the package.  we need to look at all the roles
     # and superclasses, look for attributes and figure it out.
     # Superclasses take precedence;
@@ -285,7 +285,11 @@ sub resolve_type_constraint {
           next unless $value eq $name;
           warn "      found attr info $key and $value\n" if $ENV{CATALYST_CONSTRAINTS_DEBUG};
           my @tc = eval "package ${\$parent->name}; $name";
-          return @tc if scalar(@tc);
+          if(scalar(@tc)) {
+            return map { ref($_) ? $_ : Moose::Util::TypeConstraints::find_or_parse_type_constraint($_) } @tc;
+          } else {
+            return;
+          }
         } else {
           warn "    method $m does not have method attributes\n" if $ENV{CATALYST_CONSTRAINTS_DEBUG};
         }
